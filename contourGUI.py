@@ -73,16 +73,20 @@ class ContourPlotGUI:
         
         # Plot labels
         ttk.Label(label_frame, text="Title:").grid(row=0, column=0, sticky=tk.W)
-        self.title_var = tk.StringVar(value="Contour Plot")
+        self.title_var = tk.StringVar()
         ttk.Entry(label_frame, textvariable=self.title_var, width=40).grid(row=0, column=1, padx=(10, 0), sticky=(tk.W, tk.E))
         
         ttk.Label(label_frame, text="X Label:").grid(row=1, column=0, sticky=tk.W)
-        self.xlabel_var = tk.StringVar(value="X Axis")
+        self.xlabel_var = tk.StringVar()
         ttk.Entry(label_frame, textvariable=self.xlabel_var, width=20).grid(row=1, column=1, padx=(10, 0), sticky=tk.W)
         
         ttk.Label(label_frame, text="Y Label:").grid(row=2, column=0, sticky=tk.W)
-        self.ylabel_var = tk.StringVar(value="Y Axis")
+        self.ylabel_var = tk.StringVar()
         ttk.Entry(label_frame, textvariable=self.ylabel_var, width=20).grid(row=2, column=1, padx=(10, 0), sticky=tk.W)
+        
+        ttk.Label(label_frame, text="Z Label:").grid(row=3, column=0, sticky=tk.W)
+        self.zlabel_var = tk.StringVar()
+        ttk.Entry(label_frame, textvariable=self.zlabel_var, width=20).grid(row=3, column=1, padx=(10, 0), sticky=tk.W)
         
         # Plot button
         ttk.Button(main_frame, text="Generate Contour Plot", command=self.create_plot).grid(row=5, column=0, columnspan=2, pady=10)
@@ -167,7 +171,7 @@ class ContourPlotGUI:
         z_col = self.z_col_var.get()
         
         if not all([x_col, y_col, z_col]):
-            messagebox.showwarning("Warning", "Please select all three columns (X, Y, Z).")
+            messagebox.showwarning("Warning", "Missing data columns.")
             return
             
         try:
@@ -179,7 +183,8 @@ class ContourPlotGUI:
                 self.data, x_col, y_col, z_col,
                 self.title_var.get(),
                 self.xlabel_var.get(),
-                self.ylabel_var.get()
+                self.ylabel_var.get(),
+                self.zlabel_var.get()
             )
             
             self.status_var.set("Plot generated successfully.")
@@ -188,11 +193,11 @@ class ContourPlotGUI:
             messagebox.showerror("Error", f"Failed to create plot: {e}")
             self.status_var.set("Error generating plot.")
     
-    def contourf(self, data, x_col, y_col, z_col, plot_title, x_label, y_label):
+    def contourf(self, data, x_col, y_col, z_col, plot_title, x_label, y_label, z_label):
         # Validate columns
         if not all(col in data.columns for col in [x_col, y_col, z_col]):
             missing_cols = [col for col in [x_col, y_col, z_col] if col not in data.columns]
-            raise ValueError(f"Missing columns: {missing_cols}")
+            raise ValueError(f"Missing data columns: {missing_cols}")
         
         # Remove rows with NaN values
         clean_data = data[[x_col, y_col, z_col]].dropna()
@@ -228,15 +233,16 @@ class ContourPlotGUI:
         
         # Add colorbar
         cbar = plt.colorbar(contourf, ax=ax, shrink=0.8)
-        cbar.set_label(z_col, rotation=270, labelpad=20)
         
         # Scatter plot of actual data points
         ax.scatter(X, Y, c=Z, cmap="viridis", s=30, edgecolors="white", linewidth=0.5, alpha=0.9)
         
         # Labels and formatting
-        ax.set_title(plot_title, fontsize=14, fontweight="bold", pad=20)
-        ax.set_xlabel(x_label, fontsize=12)
-        ax.set_ylabel(y_label, fontsize=12)
+        if plot_title: ax.set_title(plot_title, fontsize=14, fontweight="bold", pad=20)
+        ax.set_xlabel(x_label if x_label else x_col, fontsize=12)
+        ax.set_ylabel(y_label if y_label else y_col, fontsize=12)
+        cbar.set_label(z_label if z_label else z_col, rotation=270, labelpad=20)
+        
         ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
